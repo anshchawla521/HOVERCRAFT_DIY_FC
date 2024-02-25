@@ -1,7 +1,7 @@
 #include "CRSF.h"
 
 uint8_t rx_buffer[128] ={}; // this ensures that the buffer contains atleast one packet
-uint8_t crsf_buffer[64] = {};
+crsf_channels_t channel_data;
 uint8_t gen_poly = 0xd5; //x8 + x5 + x4 + 1
 
 
@@ -40,19 +40,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			if(calculateCRC(i+2,length) == 0) // start crc calculation from type byte
 			{
 				// valid packet
-				for(int j = 0 ; j < length+2 ; j++ )
+				if(rx_buffer[i+2] == CRSF_FRAMETYPE_RC_CHANNELS_PACKED && length-2 == CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE)
 				{
-					crsf_buffer[j] = rx_buffer[i+j];
+					memcpy(&channel_data, &(rx_buffer[i+3]),sizeof(channel_data));
+					HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
 				}
-				HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
 			}
 		}
 	}
 
-	for(int i = 0 ; i < sizeof(rx_buffer) ; i++ )
-	{
-		rx_buffer[i] = 0; // clear buffer
-	}
+	// no need
+//	for(int i = 0 ; i < sizeof(rx_buffer) ; i++ )
+//	{
+//		rx_buffer[i] = 0; // clear buffer
+//	}
+
 //	__HAL_DMA_DISABLE(huart6.hdmarx); // workaround for clearing the interrupt bit
 	// after processing re-enable DMA for new data
 	HAL_UART_Receive_DMA(&huart6, rx_buffer, sizeof(rx_buffer));

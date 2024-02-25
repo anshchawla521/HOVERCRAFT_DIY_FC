@@ -200,3 +200,27 @@ static void dshot_enable_dma_request()
 	__HAL_TIM_ENABLE_DMA(MOTOR_3_TIM, TIM_DMA_CC4);
 	// __HAL_TIM_ENABLE_DMA(MOTOR_4_TIM, TIM_DMA_CC2);
 }
+
+void dshot_arm()
+{
+	uint16_t arr[4] = {48,48,48,48};
+	for(int i =0 ; i < 2000 ; i++)
+	  {
+		  dshot_write(arr);
+		  HAL_Delay(1);
+		  // send 0 for first 2 seconds
+
+	  }
+}
+
+void dshot_disarm()
+{
+	uint16_t arr[4] = {0,0,0,0};
+	for(int i =0 ; i < 2000 ; i++)
+	  {
+		  dshot_write(arr);
+		  HAL_Delay(1);
+		  // send 0 for first 2 seconds
+
+	  }
+}

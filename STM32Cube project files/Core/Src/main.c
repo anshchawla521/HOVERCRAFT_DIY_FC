@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "dshot.h"
 #include "crsf.h"
+#include "stdbool.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,7 +39,6 @@
 /* USER CODE BEGIN PD */
 #define min_servo 840
 #define max_servo 2160
-#define USE_HAL_UART_REGISTER_CALLBACKS 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,12 +51,15 @@
 
 /* USER CODE BEGIN PV */
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
+int angle = 0;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+float map(float value_to_map , float from_low ,float from_high , float to_low , float to_high , bool constrain_within_range);
+
 
 /* USER CODE END PFP */
 
@@ -111,6 +114,9 @@ int main(void)
 	__HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 , 1200);
 	HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
 
+	// arm esc
+	dshot_arm();
+
 
 
 
@@ -122,46 +128,15 @@ int main(void)
   {
 	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 
-	  for(int i =0 ; i < 2000 ; i++)
-	  {
-		  my_motor_value[0] = 48;
-		  my_motor_value[2] = 48;
-		  dshot_write(my_motor_value);
-		  HAL_Delay(1);
-		  // send 0 for first 2 seconds
+	  my_motor_value[2] = map(channel_data.channel3, CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_MAX, 48, 2048, true);
+	  my_motor_value[0] = map(channel_data.channel2, CRSF_CHANNEL_VALUE_MID, CRSF_CHANNEL_VALUE_MAX, 48, 2048, true);
 
-	  }
-	  int angle= min_servo; // 1.1ms
-	  bool direction = true;
-	  for(int i = 0 ; i < 2048-49 ; i= i+5){
-	  my_motor_value[0] = 48+i;
-	  my_motor_value[2] = 48+i;
-	  for(int i = 0 ; i<100 ; i++){
-	  dshot_write(my_motor_value);
-	  HAL_Delay(1);}
+	  angle = (channel_data.channel1- CRSF_CHANNEL_VALUE_1000)*((float)(max_servo - min_servo)/(CRSF_CHANNEL_VALUE_2000-CRSF_CHANNEL_VALUE_1000)) + min_servo;
 
 
-	   //-70 degree to + 70 degree requires 1.11ms to 1.88ms
 
 	  __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 ,angle);
-	  if (direction) angle+=20;
-	  else angle-=20;
-
-	  if (angle> max_servo)
-	  {
-		  angle = max_servo;
-		  direction = false;
-	  }else if(angle < min_servo)
-	  {
-		  angle = min_servo;
-		  direction = true;
-	  }
-	  }
-
-
-
-
-
+	  dshot_write(my_motor_value);
 
     /* USER CODE END WHILE */
 
@@ -216,6 +191,18 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+float map(float value_to_map , float from_low ,float from_high , float to_low , float to_high , bool constrain_within_range)
+{
+	value_to_map = (value_to_map- from_low)*((to_high - to_low)/(from_high- from_low)) + to_low;
+	if(constrain_within_range)
+	{
+		value_to_map = value_to_map > to_high ? to_high : value_to_map;
+		value_to_map = value_to_map < to_low ? to_low : value_to_map;
+	}
+	return value_to_map;
+}
+
 
 /* USER CODE END 4 */
 

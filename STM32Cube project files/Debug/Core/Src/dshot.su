@@ -10,3 +10,5 @@
 ../Core/Src/dshot.c:180:13:dshot_prepare_dmabuffer_all	16	static
 ../Core/Src/dshot.c:188:13:dshot_dma_start	8	static
 ../Core/Src/dshot.c:196:13:dshot_enable_dma_request	4	static
+../Core/Src/dshot.c:204:6:dshot_arm	24	static
+../Core/Src/dshot.c:216:6:dshot_disarm	24	static
