@@ -20,12 +20,13 @@
 #include "main.h"
 #include "dma.h"
 #include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "dshot.h"
-
+#include "crsf.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -35,12 +36,14 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define min_servo 840
+#define max_servo 2160
+#define USE_HAL_UART_REGISTER_CALLBACKS 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define min_servo 840
-#define max_servo 2160
+
 
 /* USER CODE END PM */
 
@@ -48,6 +51,7 @@
 
 /* USER CODE BEGIN PV */
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,16 +98,21 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM5_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
-  dshot_init(DSHOT600);
+  	  dshot_init(DSHOT600);
+  	  crsf_init();
 
-  		// want the timer to run at 1 mhz (u can choose any )
-  		// so prescaler = 48mhz(apb1) / 1mhz = 48
+		// want the timer to run at 1 mhz (u can choose any )
+		// so prescaler = 48mhz(apb1) / 1mhz = 48
 	__HAL_TIM_SET_PRESCALER(&htim5, 48);
 		//for 50hz the arr value should be 1mhz/50 = 20000
 	__HAL_TIM_SET_AUTORELOAD(&htim5, 20000);
 	__HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 , 1200);
 	HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
+
+
+
 
   /* USER CODE END 2 */
 
@@ -112,11 +121,7 @@ int main(void)
   while (1)
   {
 	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
-//	  my_motor_value[0] = 0;
-//	  my_motor_value[2] = 0;
-//	  for(int i = 0 ; i<5000 ; i++){
-//	  dshot_write(my_motor_value);
-//	  HAL_Delay(1);}
+
 	  for(int i =0 ; i < 2000 ; i++)
 	  {
 		  my_motor_value[0] = 48;
@@ -130,7 +135,7 @@ int main(void)
 	  bool direction = true;
 	  for(int i = 0 ; i < 2048-49 ; i= i+5){
 	  my_motor_value[0] = 48+i;
-//	  my_motor_value[2] = 48+i;
+	  my_motor_value[2] = 48+i;
 	  for(int i = 0 ; i<100 ; i++){
 	  dshot_write(my_motor_value);
 	  HAL_Delay(1);}

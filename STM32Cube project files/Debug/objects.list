@@ -1,3 +1,4 @@
+"./Core/Src/CRSF.o"
 "./Core/Src/dma.o"
 "./Core/Src/dshot.o"
 "./Core/Src/gpio.o"
@@ -8,6 +9,7 @@
 "./Core/Src/sysmem.o"
 "./Core/Src/system_stm32f4xx.o"
 "./Core/Src/tim.o"
+"./Core/Src/usart.o"
 "./Core/Startup/startup_stm32f405rgtx.o"
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o"
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o"
@@ -24,3 +26,4 @@
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.o"
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.o"
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o"
+"./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o"

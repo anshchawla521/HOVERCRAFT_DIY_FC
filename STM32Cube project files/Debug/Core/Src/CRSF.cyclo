@@ -1,0 +1,4 @@
+../Core/Src/CRSF.c:9:6:HAL_UART_RxHalfCpltCallback	1
+../Core/Src/CRSF.c:15:6:crsf_init	1
+../Core/Src/CRSF.c:23:6:HAL_UART_RxCpltCallback	8
+../Core/Src/CRSF.c:62:9:calculateCRC	7
