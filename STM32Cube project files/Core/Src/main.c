@@ -116,6 +116,12 @@ int main(void)
 
 	// arm esc
 	dshot_arm();
+//	dshot_disarm();
+	for(int i = 0 ; i < 10000;i++)
+	{
+	beep(0,i%5);
+	}
+	HAL_Delay(10000);
 
 
 
@@ -136,7 +142,7 @@ int main(void)
 
 
 	  __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 ,angle);
-	  dshot_write(my_motor_value);
+	  dshot_write(my_motor_value , false);
 
     /* USER CODE END WHILE */
 

@@ -14,7 +14,8 @@ static uint32_t motor1_dmabuffer[DSHOT_DMA_BUFFER_SIZE];
 static uint32_t motor2_dmabuffer[DSHOT_DMA_BUFFER_SIZE];
 static uint32_t motor3_dmabuffer[DSHOT_DMA_BUFFER_SIZE];
 static uint32_t motor4_dmabuffer[DSHOT_DMA_BUFFER_SIZE];
-
+bool is_armed = false;
+uint16_t last_sent_motor_value[4] = {0,0,0,0};
 /* Static functions */
 // dshot init
 static uint32_t dshot_choose_type(dshot_type_e dshot_type);
@@ -24,9 +25,9 @@ static void dshot_put_tc_callback_function();
 static void dshot_start_pwm();
 
 // dshot write
-static uint16_t dshot_prepare_packet(uint16_t value);
-static void dshot_prepare_dmabuffer(uint32_t *motor_dmabuffer, uint16_t value);
-static void dshot_prepare_dmabuffer_all();
+static uint16_t dshot_prepare_packet(uint16_t value , bool dshot_telemetry);
+static void dshot_prepare_dmabuffer(uint32_t *motor_dmabuffer, uint16_t value , bool dshot_telemetry);
+static void dshot_prepare_dmabuffer_all(uint16_t *motor_value , bool dshot_telemetry);
 static void dshot_dma_start();
 static void dshot_enable_dma_request();
 
@@ -38,9 +39,13 @@ void dshot_init(dshot_type_e dshot_type)
 	dshot_start_pwm();
 }
 
-void dshot_write(uint16_t *motor_value)
+void dshot_write(uint16_t *motor_value , bool dshot_telemetry)
 {
-	dshot_prepare_dmabuffer_all(motor_value);
+	last_sent_motor_value[0] = motor_value[0];
+	last_sent_motor_value[1] = motor_value[1];
+	last_sent_motor_value[2] = motor_value[2];
+	last_sent_motor_value[3] = motor_value[3];
+	dshot_prepare_dmabuffer_all(motor_value, dshot_telemetry);
 	dshot_dma_start();
 	dshot_enable_dma_request();
 }
@@ -138,10 +143,10 @@ static void dshot_start_pwm()
 	// HAL_TIM_PWM_Start(MOTOR_4_TIM, MOTOR_4_TIM_CHANNEL);
 }
 
-static uint16_t dshot_prepare_packet(uint16_t value)
+static uint16_t dshot_prepare_packet(uint16_t value , bool dshot_telemetry)
 {
 	uint16_t packet;
-	bool dshot_telemetry = false;
+
 
 	packet = (value << 1) | (dshot_telemetry ? 1 : 0);
 
@@ -162,10 +167,10 @@ static uint16_t dshot_prepare_packet(uint16_t value)
 }
 
 // Convert 16 bits packet to 16 pwm signal
-static void dshot_prepare_dmabuffer(uint32_t *motor_dmabuffer, uint16_t value)
+static void dshot_prepare_dmabuffer(uint32_t *motor_dmabuffer, uint16_t value , bool dshot_telemetry)
 {
 	uint16_t packet;
-	packet = dshot_prepare_packet(value);
+	packet = dshot_prepare_packet(value ,dshot_telemetry );
 
 	for (int i = 0; i < 16; i++)
 	{
@@ -177,11 +182,11 @@ static void dshot_prepare_dmabuffer(uint32_t *motor_dmabuffer, uint16_t value)
 	motor_dmabuffer[17] = 0;
 }
 
-static void dshot_prepare_dmabuffer_all(uint16_t *motor_value)
+static void dshot_prepare_dmabuffer_all(uint16_t *motor_value , bool dshot_telemetry)
 {
-	dshot_prepare_dmabuffer(motor1_dmabuffer, motor_value[0]);
+	dshot_prepare_dmabuffer(motor1_dmabuffer, motor_value[0], dshot_telemetry);
 	// dshot_prepare_dmabuffer(motor2_dmabuffer, motor_value[1]);
-	dshot_prepare_dmabuffer(motor3_dmabuffer, motor_value[2]);
+	dshot_prepare_dmabuffer(motor3_dmabuffer, motor_value[2] ,dshot_telemetry);
 	// dshot_prepare_dmabuffer(motor4_dmabuffer, motor_value[3]);
 }
 
@@ -204,9 +209,10 @@ static void dshot_enable_dma_request()
 void dshot_arm()
 {
 	uint16_t arr[4] = {48,48,48,48};
+	is_armed = true;
 	for(int i =0 ; i < 2000 ; i++)
 	  {
-		  dshot_write(arr);
+		  dshot_write(arr , false);
 		  HAL_Delay(1);
 		  // send 0 for first 2 seconds
 
@@ -216,11 +222,76 @@ void dshot_arm()
 void dshot_disarm()
 {
 	uint16_t arr[4] = {0,0,0,0};
+	is_armed = false;
 	for(int i =0 ; i < 2000 ; i++)
 	  {
-		  dshot_write(arr);
+		  dshot_write(arr , false);
 		  HAL_Delay(1);
 		  // send 0 for first 2 seconds
 
 	  }
+}
+
+void enable_dshot_3d(uint8_t motor_number)
+{
+	last_sent_motor_value[motor_number] = 10;
+	for(int i =0 ; i < 6 ; i++)
+		  {
+			  dshot_write(last_sent_motor_value , false);
+			  HAL_Delay(1);
+			  // send 0 for first 2 seconds
+		  }
+	save_settings(motor_number);
+}
+void disable_dshot_3d(uint8_t motor_number)
+{
+	last_sent_motor_value[motor_number] = 9;
+	for(int i =0 ; i < 6 ; i++)
+		  {
+			  dshot_write(last_sent_motor_value , false);
+			  HAL_Delay(1);
+			  // send 0 for first 2 seconds
+		  }
+	save_settings(motor_number);
+}
+void reverse_direction(uint8_t motor_number)
+{
+	last_sent_motor_value[motor_number] = 8;
+	for(int i =0 ; i < 6 ; i++)
+		  {
+			  dshot_write(last_sent_motor_value , false);
+			  HAL_Delay(1);
+			  // send 0 for first 2 seconds
+		  }
+	save_settings(motor_number);
+}
+void normal_direction(uint8_t motor_number)
+{
+	last_sent_motor_value[motor_number] = 7;
+	for(int i =0 ; i < 6 ; i++)
+	  {
+		  dshot_write(last_sent_motor_value , false);
+		  HAL_Delay(1);
+		  // send 0 for first 2 seconds
+	  }
+	save_settings(motor_number);
+}
+void beep(uint8_t motor_number ,uint8_t beep_number)
+{
+	beep_number = beep_number < 0 ? 0:beep_number;
+	beep_number = beep_number > 5 ? 5:beep_number;
+
+	last_sent_motor_value[motor_number] = 2;
+	dshot_write(last_sent_motor_value,true);
+	HAL_Delay(100);
+}
+void save_settings(uint8_t motor_number)
+{
+	last_sent_motor_value[motor_number] = 12;
+	for(int i =0 ; i < 6 ; i++)
+	  {
+		dshot_write(last_sent_motor_value , false);
+		  HAL_Delay(1);
+	  }
+	HAL_Delay(40); // min 35ms delay
 }
