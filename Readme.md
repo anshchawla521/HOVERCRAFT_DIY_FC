@@ -6,6 +6,7 @@ https://github.com/Carbon225/esp32-dshot/blob/master/DShotRMT.cpp
 
 ## comments
 Beep working for cmd setting why telem needs to be set 1 i dont know
+reverse and normal direction working
 
 # next steps
 

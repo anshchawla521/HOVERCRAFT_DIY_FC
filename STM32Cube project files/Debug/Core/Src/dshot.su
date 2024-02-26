@@ -14,7 +14,7 @@
 ../Core/Src/dshot.c:222:6:dshot_disarm	24	static
 ../Core/Src/dshot.c:235:6:enable_dshot_3d	24	static
 ../Core/Src/dshot.c:246:6:disable_dshot_3d	24	static
-../Core/Src/dshot.c:257:6:reverse_direction	24	static
-../Core/Src/dshot.c:268:6:normal_direction	24	static
-../Core/Src/dshot.c:279:6:beep	16	static
+../Core/Src/dshot.c:257:6:dshot_reverse_direction	24	static
+../Core/Src/dshot.c:268:6:dshot_normal_direction	24	static
+../Core/Src/dshot.c:279:6:dshot_beep	16	static
 ../Core/Src/dshot.c:288:6:save_settings	24	static

@@ -69,10 +69,10 @@ void dshot_init(dshot_type_e dshot_type);
 void dshot_write(uint16_t* motor_value , bool dshot_telemetry);
 void dshot_arm();
 void dshot_disarm();
-void beep(uint8_t motor_number , uint8_t beep_number);
+void dshot_beep(uint8_t motor_number , uint8_t beep_number);
 void save_settings(uint8_t motor_number);
-void normal_direction(uint8_t motor_number);
-void reverse_direction(uint8_t motor_number);
+void dshot_normal_direction(uint8_t motor_number);
+void dshot_reverse_direction(uint8_t motor_number);
 void disable_dshot_3d(uint8_t motor_number);
 void enable_dshot_3d(uint8_t motor_number);
 

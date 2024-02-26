@@ -254,29 +254,29 @@ void disable_dshot_3d(uint8_t motor_number)
 		  }
 	save_settings(motor_number);
 }
-void reverse_direction(uint8_t motor_number)
+void dshot_reverse_direction(uint8_t motor_number)
 {
-	last_sent_motor_value[motor_number] = 8;
-	for(int i =0 ; i < 6 ; i++)
+	last_sent_motor_value[motor_number] = 21;
+	for(int i =0 ; i < 10 ; i++)
 		  {
-			  dshot_write(last_sent_motor_value , false);
+			  dshot_write(last_sent_motor_value , true);
 			  HAL_Delay(1);
 			  // send 0 for first 2 seconds
 		  }
 	save_settings(motor_number);
 }
-void normal_direction(uint8_t motor_number)
+void dshot_normal_direction(uint8_t motor_number)
 {
-	last_sent_motor_value[motor_number] = 7;
-	for(int i =0 ; i < 6 ; i++)
+	last_sent_motor_value[motor_number] = 20;
+	for(int i =0 ; i < 10 ; i++)
 	  {
-		  dshot_write(last_sent_motor_value , false);
+		  dshot_write(last_sent_motor_value , true);
 		  HAL_Delay(1);
 		  // send 0 for first 2 seconds
 	  }
 	save_settings(motor_number);
 }
-void beep(uint8_t motor_number ,uint8_t beep_number)
+void dshot_beep(uint8_t motor_number ,uint8_t beep_number)
 {
 	beep_number = beep_number < 0 ? 0:beep_number;
 	beep_number = beep_number > 5 ? 5:beep_number;
@@ -288,9 +288,9 @@ void beep(uint8_t motor_number ,uint8_t beep_number)
 void save_settings(uint8_t motor_number)
 {
 	last_sent_motor_value[motor_number] = 12;
-	for(int i =0 ; i < 6 ; i++)
+	for(int i =0 ; i < 10 ; i++)
 	  {
-		dshot_write(last_sent_motor_value , false);
+		dshot_write(last_sent_motor_value , true);
 		  HAL_Delay(1);
 	  }
 	HAL_Delay(40); // min 35ms delay

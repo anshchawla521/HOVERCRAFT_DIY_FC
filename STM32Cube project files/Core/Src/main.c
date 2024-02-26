@@ -116,12 +116,8 @@ int main(void)
 
 	// arm esc
 	dshot_arm();
-//	dshot_disarm();
-	for(int i = 0 ; i < 10000;i++)
-	{
-	beep(0,i%5);
-	}
-	HAL_Delay(10000);
+	dshot_normal_direction(0);
+	dshot_normal_direction(2);
 
 
 
@@ -134,15 +130,26 @@ int main(void)
   {
 	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 
+	  if(channel_data.channel5 > 1500) // arm channel
+	  {
 	  my_motor_value[2] = map(channel_data.channel3, CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_MAX, 48, 2048, true);
 	  my_motor_value[0] = map(channel_data.channel2, CRSF_CHANNEL_VALUE_MID, CRSF_CHANNEL_VALUE_MAX, 48, 2048, true);
-
-	  angle = (channel_data.channel1- CRSF_CHANNEL_VALUE_1000)*((float)(max_servo - min_servo)/(CRSF_CHANNEL_VALUE_2000-CRSF_CHANNEL_VALUE_1000)) + min_servo;
-
-
+	  angle = map(channel_data.channel1,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,min_servo, max_servo,true);
+	  }
+	  else{
+		  my_motor_value[0] = DSHOT_MIN_THROTTLE;
+		  my_motor_value[2] = DSHOT_MIN_THROTTLE;
+		  angle = 1500;
+	  }
 
 	  __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 ,angle);
+	  if(my_motor_value[0] == DSHOT_MIN_THROTTLE && my_motor_value[2] == DSHOT_MIN_THROTTLE && channel_data.channel9 > 1500 )
+	  {
+		  dshot_beep(0,2);
+		  dshot_beep(2,2);
+	  }else{
 	  dshot_write(my_motor_value , false);
+	  }
 
     /* USER CODE END WHILE */
 
