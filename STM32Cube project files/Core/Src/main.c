@@ -37,8 +37,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define min_servo 840
-#define max_servo 2160
+#define min_servo 950
+#define max_servo 2180
+#define deadband 100
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -115,10 +116,11 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
 
 	// arm esc
-	dshot_arm();
-	dshot_normal_direction(0);
-	dshot_normal_direction(2);
 
+    dshot_arm();
+    //enable_dshot_3d(0);
+    //dshot_reverse_direction(0);// back motor
+    //dshot_reverse_direction(2);
 
 
 
@@ -132,18 +134,31 @@ int main(void)
 
 	  if(channel_data.channel5 > 1500) // arm channel
 	  {
-	  my_motor_value[2] = map(channel_data.channel3, CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_MAX, 48, 2048, true);
-	  my_motor_value[0] = map(channel_data.channel2, CRSF_CHANNEL_VALUE_MID, CRSF_CHANNEL_VALUE_MAX, 48, 2048, true);
-	  angle = map(channel_data.channel1,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,min_servo, max_servo,true);
+		  if(channel_data.channel6 < 1500)
+			  my_motor_value[2] = map(channel_data.channel3, CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_2000, DSHOT_3DN_MIN_THROTTLE, DSHOT_3DN_MAX_THROTTLE, true);
+		  else
+			  my_motor_value[2] = map(channel_data.channel3, CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_2000, DSHOT_3DR_MIN_THROTTLE, DSHOT_3DR_MAX_THROTTLE, true);
+
+
+		  // back motor
+		  if(channel_data.channel2 >= CRSF_CHANNEL_VALUE_MID + deadband)
+			  my_motor_value[0] = map(channel_data.channel2, CRSF_CHANNEL_VALUE_MID + deadband, CRSF_CHANNEL_VALUE_2000, DSHOT_3DN_MIN_THROTTLE, DSHOT_3DN_MAX_THROTTLE, true); // correct this
+		  else if(channel_data.channel2 <= CRSF_CHANNEL_VALUE_MID - deadband)
+			  my_motor_value[0] = map(channel_data.channel2, CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_MID - deadband, DSHOT_3DR_MAX_THROTTLE, DSHOT_3DR_MIN_THROTTLE, true); // correct this
+		  else
+			  my_motor_value[0]= 0;
+
+
+		  angle = map(channel_data.channel1,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,min_servo, max_servo,true);
 	  }
 	  else{
-		  my_motor_value[0] = DSHOT_MIN_THROTTLE;
-		  my_motor_value[2] = DSHOT_MIN_THROTTLE;
+		  my_motor_value[0] = 0;
+		  my_motor_value[2] = 0;
 		  angle = 1500;
 	  }
 
 	  __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 ,angle);
-	  if(my_motor_value[0] == DSHOT_MIN_THROTTLE && my_motor_value[2] == DSHOT_MIN_THROTTLE && channel_data.channel9 > 1500 )
+	  if(my_motor_value[0] == 0 && my_motor_value[2] == 0 && channel_data.channel9 > 1500 )
 	  {
 		  dshot_beep(0,2);
 		  dshot_beep(2,2);
@@ -207,11 +222,19 @@ void SystemClock_Config(void)
 
 float map(float value_to_map , float from_low ,float from_high , float to_low , float to_high , bool constrain_within_range)
 {
+
 	value_to_map = (value_to_map- from_low)*((to_high - to_low)/(from_high- from_low)) + to_low;
 	if(constrain_within_range)
 	{
-		value_to_map = value_to_map > to_high ? to_high : value_to_map;
-		value_to_map = value_to_map < to_low ? to_low : value_to_map;
+		if(to_high>=to_low){
+			value_to_map = value_to_map > to_high ? to_high : value_to_map;
+			value_to_map = value_to_map < to_low ? to_low : value_to_map;
+		}else{
+			// to low is the higher limit
+			value_to_map = value_to_map < to_high ? to_high : value_to_map;
+			value_to_map = value_to_map > to_low ? to_low : value_to_map;
+
+		}
 	}
 	return value_to_map;
 }

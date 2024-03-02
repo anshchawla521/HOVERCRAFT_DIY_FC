@@ -208,7 +208,7 @@ static void dshot_enable_dma_request()
 
 void dshot_arm()
 {
-	uint16_t arr[4] = {48,48,48,48};
+	uint16_t arr[4] = {0,0,0,0};
 	is_armed = true;
 	for(int i =0 ; i < 2000 ; i++)
 	  {
@@ -219,23 +219,11 @@ void dshot_arm()
 	  }
 }
 
-void dshot_disarm()
-{
-	uint16_t arr[4] = {0,0,0,0};
-	is_armed = false;
-	for(int i =0 ; i < 2000 ; i++)
-	  {
-		  dshot_write(arr , false);
-		  HAL_Delay(1);
-		  // send 0 for first 2 seconds
-
-	  }
-}
 
 void enable_dshot_3d(uint8_t motor_number)
 {
 	last_sent_motor_value[motor_number] = 10;
-	for(int i =0 ; i < 6 ; i++)
+	for(int i =0 ; i < 10 ; i++)
 		  {
 			  dshot_write(last_sent_motor_value , false);
 			  HAL_Delay(1);
@@ -246,7 +234,7 @@ void enable_dshot_3d(uint8_t motor_number)
 void disable_dshot_3d(uint8_t motor_number)
 {
 	last_sent_motor_value[motor_number] = 9;
-	for(int i =0 ; i < 6 ; i++)
+	for(int i =0 ; i < 10 ; i++)
 		  {
 			  dshot_write(last_sent_motor_value , false);
 			  HAL_Delay(1);
@@ -256,6 +244,7 @@ void disable_dshot_3d(uint8_t motor_number)
 }
 void dshot_reverse_direction(uint8_t motor_number)
 {
+	// works with 3d mode also
 	last_sent_motor_value[motor_number] = 21;
 	for(int i =0 ; i < 10 ; i++)
 		  {

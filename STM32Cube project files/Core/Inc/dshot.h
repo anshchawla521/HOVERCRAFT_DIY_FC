@@ -52,6 +52,12 @@
 
 #define DSHOT_MIN_THROTTLE      48
 #define DSHOT_MAX_THROTTLE     	2047
+
+#define DSHOT_3DN_MIN_THROTTLE      48
+#define DSHOT_3DN_MAX_THROTTLE     	1000 // experimented values with bluejay 0.18 // values from betaflight didnt work for me
+#define DSHOT_3D_NEUTRAL 0
+#define DSHOT_3DR_MIN_THROTTLE      1055
+#define DSHOT_3DR_MAX_THROTTLE     	2047
 #define DSHOT_RANGE 			(DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE)
 
 
@@ -68,7 +74,6 @@ typedef enum
 void dshot_init(dshot_type_e dshot_type);
 void dshot_write(uint16_t* motor_value , bool dshot_telemetry);
 void dshot_arm();
-void dshot_disarm();
 void dshot_beep(uint8_t motor_number , uint8_t beep_number);
 void save_settings(uint8_t motor_number);
 void dshot_normal_direction(uint8_t motor_number);
