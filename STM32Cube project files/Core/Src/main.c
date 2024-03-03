@@ -55,6 +55,7 @@ uint16_t my_motor_value[4] = {0, 0, 0, 0};
 int angle = 0;
 typedef enum {IDLE = 0,PREARMED,NOPREARM,ARMED,FAILSAFE} armingstate_t;
 armingstate_t arm_state = 0;
+uint16_t battery_telem_last_sent = 0;
 
 /* USER CODE END PV */
 
@@ -169,7 +170,7 @@ int main(void)
 	  else{
 		  my_motor_value[0] = 0;
 		  my_motor_value[2] = 0;
-		  angle = 1500;
+		  angle = (min_servo+max_servo)/2;
 	  }
 
 	  __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 ,angle);
@@ -182,7 +183,17 @@ int main(void)
 	  }
 
 
+	  // telemetry
+	  if((uint16_t)(((uint16_t)(TIM4->CNT) - battery_telem_last_sent)) > (uint16_t)(500000/20)) // send battery telemetry every 500ms
+	  {
+		  battery_telem_last_sent = (uint16_t)(TIM4->CNT);
+		  crsf_sensor_battery_t bat = {10,10,10,34};
+		 send_telem(CRSF_FRAMETYPE_BATTERY_SENSOR, (uint8_t*)&bat, sizeof(bat)/sizeof(uint8_t));
+		 // in future before sending check whether old data sent or not
+	  }
 
+
+	// FAILSAFE detection
 	  if(((volatile uint16_t)(TIM4->CNT) - last_packet_received_time) > (uint16_t)(500000/20) && new_packet_recieved == true) // no packet received in 100ms // 20 us is the step size
 	  {
 		  arm_state = FAILSAFE;

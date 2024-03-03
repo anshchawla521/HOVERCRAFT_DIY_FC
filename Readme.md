@@ -11,10 +11,12 @@ reverse and normal direction working
 basic hovercraft working
 PRE ARM Added 
 Basic Failsafe working on RX lost
+CRC algo not touching as betaflight also uses same only
+basic telemetry working
 
 # next steps
 
 -> implement filter
--> improve crc,receving algo , baud rate as f1000
+-> receving algo , baud rate as f1000
 -> implement crsf telemetry
 -> implement msp for esc configurator.com
