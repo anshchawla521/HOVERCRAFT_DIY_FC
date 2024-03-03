@@ -53,6 +53,8 @@
 /* USER CODE BEGIN PV */
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
 int angle = 0;
+typedef enum {IDLE = 0,PREARMED,NOPREARM,ARMED,FAILSAFE} armingstate_t;
+armingstate_t arm_state = 0;
 
 /* USER CODE END PV */
 
@@ -131,8 +133,14 @@ int main(void)
   while (1)
   {
 	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
+	  if(arm_state == ARMED && channel_data.channel5 < CRSF_CHANNEL_VALUE_MID + 20) arm_state = IDLE ;
+	  else if(arm_state == IDLE && channel_data.channel6 > CRSF_CHANNEL_VALUE_MID + 20 && channel_data.channel5 < CRSF_CHANNEL_VALUE_MID + 20) arm_state = PREARMED ;
+	  else if(arm_state == IDLE && channel_data.channel6 < CRSF_CHANNEL_VALUE_MID + 20 && channel_data.channel5 > CRSF_CHANNEL_VALUE_MID + 20) arm_state = NOPREARM ;
+	  else if(arm_state == PREARMED && channel_data.channel6 > CRSF_CHANNEL_VALUE_MID + 20 && channel_data.channel5 > CRSF_CHANNEL_VALUE_MID + 20) arm_state = ARMED ;
+	  else if(arm_state == NOPREARM && channel_data.channel6 < CRSF_CHANNEL_VALUE_MID + 20 ) arm_state = IDLE ;
+	  if(arm_state == FAILSAFE ) arm_state = IDLE ; // place holder for now
 
-	  if(channel_data.channel5 > 1500) // arm channel
+	  if(arm_state == ARMED) // arm channel
 	  {
 		  if(channel_data.channel6 < 1500)
 			  my_motor_value[2] = map(channel_data.channel3, CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_2000, DSHOT_3DN_MIN_THROTTLE, DSHOT_3DN_MAX_THROTTLE, true);
