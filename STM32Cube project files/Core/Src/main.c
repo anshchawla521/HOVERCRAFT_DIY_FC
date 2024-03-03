@@ -105,20 +105,27 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM5_Init();
   MX_USART6_UART_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-  	  dshot_init(DSHOT600);
-  	  crsf_init();
+  dshot_init(DSHOT600);
+  crsf_init();
 
-		// want the timer to run at 1 mhz (u can choose any )
-		// so prescaler = 48mhz(apb1) / 1mhz = 48
+	// want the timer to run at 1 mhz (u can choose any )
+	// so prescaler = 48mhz(apb1) / 1mhz = 48
 	__HAL_TIM_SET_PRESCALER(&htim5, 48);
 		//for 50hz the arr value should be 1mhz/50 = 20000
 	__HAL_TIM_SET_AUTORELOAD(&htim5, 20000);
 	__HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 , 1200);
 	HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
 
-	// arm esc
 
+	// tim4 used for measurment of time
+	__HAL_TIM_SET_PRESCALER(&htim4, 960); // so timer running at 0.05mhz ==> 20 us = 1 step => timer overflows in 1.3 seconds
+	HAL_TIM_Base_Start(&htim4);
+
+
+
+	// arm esc
     dshot_arm();
     //enable_dshot_3d(0);
     //dshot_reverse_direction(0);// back motor
@@ -138,7 +145,7 @@ int main(void)
 	  else if(arm_state == IDLE && channel_data.channel6 < CRSF_CHANNEL_VALUE_MID + 20 && channel_data.channel5 > CRSF_CHANNEL_VALUE_MID + 20) arm_state = NOPREARM ;
 	  else if(arm_state == PREARMED && channel_data.channel6 > CRSF_CHANNEL_VALUE_MID + 20 && channel_data.channel5 > CRSF_CHANNEL_VALUE_MID + 20) arm_state = ARMED ;
 	  else if(arm_state == NOPREARM && channel_data.channel6 < CRSF_CHANNEL_VALUE_MID + 20 ) arm_state = IDLE ;
-	  if(arm_state == FAILSAFE ) arm_state = IDLE ; // place holder for now
+
 
 	  if(arm_state == ARMED) // arm channel
 	  {
@@ -172,6 +179,17 @@ int main(void)
 		  dshot_beep(2,2);
 	  }else{
 	  dshot_write(my_motor_value , false);
+	  }
+
+
+
+	  if(((volatile uint16_t)(TIM4->CNT) - last_packet_received_time) > (uint16_t)(500000/20) && new_packet_recieved == true) // no packet received in 100ms // 20 us is the step size
+	  {
+		  arm_state = FAILSAFE;
+		  new_packet_recieved = false;
+	  }else if(arm_state == FAILSAFE && new_packet_recieved == true)
+	  {
+		  arm_state = IDLE;
 	  }
 
     /* USER CODE END WHILE */

@@ -10,10 +10,11 @@ reverse and normal direction working
 3d mode working when used with esc configurator.com (have to flash betaflight for that)
 basic hovercraft working
 PRE ARM Added 
+Basic Failsafe working on RX lost
 
 # next steps
 
--> implement failsafe with timer and maybe crsf also
 -> implement filter
 -> improve crc,receving algo , baud rate as f1000
--> add reverse
+-> implement crsf telemetry
+-> implement msp for esc configurator.com

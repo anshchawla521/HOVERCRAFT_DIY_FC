@@ -1,9 +1,10 @@
 #include "CRSF.h"
 
-uint8_t rx_buffer[128] ={}; // this ensures that the buffer contains atleast one packet
+volatile uint8_t rx_buffer[128] ={}; // this ensures that the buffer contains atleast one packet
 crsf_channels_t channel_data;
 uint8_t gen_poly = 0xd5; //x8 + x5 + x4 + 1
-
+volatile uint16_t last_packet_received_time = 0;
+volatile bool new_packet_recieved = false;
 
 
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
@@ -23,6 +24,7 @@ void crsf_init()
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	uint8_t length = 0;
+
 	// check if its a valid packet
 	for(int i = 0 ; i < sizeof(rx_buffer) ; i++)
 	{
@@ -40,6 +42,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			if(calculateCRC(i+2,length) == 0) // start crc calculation from type byte
 			{
 				// valid packet
+			    last_packet_received_time = TIM4->CNT; // non hal way of doing it
+//				last_packet_received_time = __HAL_TIM_GET_COUNTER(&htim4);
+				new_packet_recieved = true;
 				if(rx_buffer[i+2] == CRSF_FRAMETYPE_RC_CHANNELS_PACKED && length-2 == CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE)
 				{
 					memcpy(&channel_data, &(rx_buffer[i+3]),sizeof(channel_data));
