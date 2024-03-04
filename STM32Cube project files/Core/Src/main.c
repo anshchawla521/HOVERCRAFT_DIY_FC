@@ -63,7 +63,7 @@ uint16_t battery_telem_last_sent = 0;
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 float map(float value_to_map , float from_low ,float from_high , float to_low , float to_high , bool constrain_within_range);
-
+void convert_to_big_endian(uint8_t * dst , uint8_t bytes);
 
 /* USER CODE END PFP */
 
@@ -187,7 +187,10 @@ int main(void)
 	  if((uint16_t)(((uint16_t)(TIM4->CNT) - battery_telem_last_sent)) > (uint16_t)(500000/20)) // send battery telemetry every 500ms
 	  {
 		  battery_telem_last_sent = (uint16_t)(TIM4->CNT);
-		  crsf_sensor_battery_t bat = {10,10,10,34};
+		  crsf_sensor_battery_t bat = {1,2,56,34};
+		  convert_to_big_endian((uint8_t*)&bat, 2); // battery voltage
+		  convert_to_big_endian(&(((uint8_t*)&bat)[2]), 2); // battery current
+		  convert_to_big_endian(&(((uint8_t*)&bat)[4]), 3); // mah
 		 send_telem(CRSF_FRAMETYPE_BATTERY_SENSOR, (uint8_t*)&bat, sizeof(bat)/sizeof(uint8_t));
 		 // in future before sending check whether old data sent or not
 	  }
@@ -276,6 +279,19 @@ float map(float value_to_map , float from_low ,float from_high , float to_low , 
 	return value_to_map;
 }
 
+
+void convert_to_big_endian(uint8_t * dst , uint8_t bytes)
+{
+	uint8_t temp =0;
+	for(int i = 0; i < bytes/2;i++)
+	{
+		//swap
+		temp = dst[i];
+		dst[i] = dst[(bytes-1)-i];
+		dst[(bytes-1)-i] = temp;
+	}
+
+}
 
 /* USER CODE END 4 */
 

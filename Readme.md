@@ -9,10 +9,10 @@ Beep working for cmd setting why telem needs to be set 1 i dont know
 reverse and normal direction working
 3d mode working when used with esc configurator.com (have to flash betaflight for that)
 basic hovercraft working
-PRE ARM Added 
+PRE ARM Added
 Basic Failsafe working on RX lost
 CRC algo not touching as betaflight also uses same only
-basic telemetry working
+proper telemetry working
 
 # next steps
 
