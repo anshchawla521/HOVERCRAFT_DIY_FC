@@ -1,5 +1,6 @@
-../Core/Src/CRSF.c:13:6:HAL_UART_RxHalfCpltCallback	32	static
-../Core/Src/CRSF.c:49:6:crsf_init	8	static
-../Core/Src/CRSF.c:57:6:HAL_UART_RxCpltCallback	32	static
-../Core/Src/CRSF.c:102:9:calculateCRC	48	static
-../Core/Src/CRSF.c:138:6:send_telem	24	static
+../Core/Src/CRSF.c:12:6:HAL_UART_ErrorCallback	16	static
+../Core/Src/CRSF.c:27:6:HAL_UART_RxHalfCpltCallback	32	static
+../Core/Src/CRSF.c:66:6:crsf_init	8	static
+../Core/Src/CRSF.c:74:6:HAL_UART_RxCpltCallback	32	static
+../Core/Src/CRSF.c:122:9:calculateCRC	48	static
+../Core/Src/CRSF.c:158:6:send_telem	24	static

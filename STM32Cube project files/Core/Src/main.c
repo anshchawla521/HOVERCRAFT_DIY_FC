@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "dma.h"
 #include "tim.h"
 #include "usart.h"
@@ -40,6 +41,11 @@
 #define min_servo 950
 #define max_servo 2180
 #define deadband 100
+#define vbat_scale 110
+#define vbat_divider 10
+#define vbat_multiplier 1
+#define ibata_scale 400
+#define ibata_offset 0
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -56,6 +62,8 @@ int angle = 0;
 typedef enum {IDLE = 0,PREARMED,NOPREARM,ARMED,FAILSAFE} armingstate_t;
 armingstate_t arm_state = 0;
 uint16_t battery_telem_last_sent = 0;
+volatile uint16_t raw_adc_data[3] = {0};
+volatile crsf_sensor_battery_t bat = {1,2,4,34};
 
 /* USER CODE END PV */
 
@@ -64,6 +72,9 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 float map(float value_to_map , float from_low ,float from_high , float to_low , float to_high , bool constrain_within_range);
 void convert_to_big_endian(uint8_t * dst , uint8_t bytes);
+bool subtract_and_compare_unsigned(uint32_t a,uint32_t b, uint32_t c , uint32_t max_size);
+
+
 
 /* USER CODE END PFP */
 
@@ -107,6 +118,7 @@ int main(void)
   MX_TIM5_Init();
   MX_USART6_UART_Init();
   MX_TIM4_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   dshot_init(DSHOT600);
   crsf_init();
@@ -124,6 +136,8 @@ int main(void)
 	__HAL_TIM_SET_PRESCALER(&htim4, 960); // so timer running at 0.05mhz ==> 20 us = 1 step => timer overflows in 1.3 seconds
 	HAL_TIM_Base_Start(&htim4);
 
+	// adc
+    //HAL_ADC_Start_DMA(&hadc1,(uint32_t *)raw_adc_data , 2); // take readings from adc
 
 
 	// arm esc
@@ -147,6 +161,10 @@ int main(void)
 	  else if(arm_state == PREARMED && channel_data.channel6 > CRSF_CHANNEL_VALUE_MID + 20 && channel_data.channel5 > CRSF_CHANNEL_VALUE_MID + 20) arm_state = ARMED ;
 	  else if(arm_state == NOPREARM && channel_data.channel6 < CRSF_CHANNEL_VALUE_MID + 20 ) arm_state = IDLE ;
 
+//	  if(rx_buffer[0] | rx_buffer[1] | rx_buffer[2] | rx_buffer[3] | rx_buffer[4])
+//	  {
+//		  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
+//	  }
 
 	  if(arm_state == ARMED) // arm channel
 	  {
@@ -173,8 +191,22 @@ int main(void)
 		  angle = (min_servo+max_servo)/2;
 	  }
 
+	  if(arm_state == FAILSAFE )
+	  {
+		  if(!(USART6->SR && (1<<3)))
+		  {
+			  // not over run error
+			  dshot_beep(0,2);
+		  }else
+		  {
+//			  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
+		  }
+		  dshot_beep(2,2);
+		  angle = 1000;
+
+	  }
 	  __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 ,angle);
-	  if(my_motor_value[0] == 0 && my_motor_value[2] == 0 && channel_data.channel9 > 1500 )
+	  if(my_motor_value[0] == 0 && my_motor_value[2] == 0 && channel_data.channel9 > 1500)
 	  {
 		  dshot_beep(0,2);
 		  dshot_beep(2,2);
@@ -184,23 +216,27 @@ int main(void)
 
 
 	  // telemetry
-	  if((uint16_t)(((uint16_t)(TIM4->CNT) - battery_telem_last_sent)) > (uint16_t)(500000/20)) // send battery telemetry every 500ms
+	  if((uint16_t)(HAL_GetTick() - battery_telem_last_sent) > 500) // send battery telemetry every 500ms
 	  {
-		  battery_telem_last_sent = (uint16_t)(TIM4->CNT);
-		  crsf_sensor_battery_t bat = {1,2,56,34};
-		  convert_to_big_endian((uint8_t*)&bat, 2); // battery voltage
-		  convert_to_big_endian(&(((uint8_t*)&bat)[2]), 2); // battery current
-		  convert_to_big_endian(&(((uint8_t*)&bat)[4]), 3); // mah
-		 send_telem(CRSF_FRAMETYPE_BATTERY_SENSOR, (uint8_t*)&bat, sizeof(bat)/sizeof(uint8_t));
+		  battery_telem_last_sent = HAL_GetTick();
+		  crsf_sensor_battery_t temp_bat = {0};
+		  memcpy((void*)&temp_bat , (void*)&bat, sizeof(bat));
+		  convert_to_big_endian((uint8_t*)&temp_bat, 2); // battery voltage
+		  convert_to_big_endian(&(((uint8_t*)&temp_bat)[2]), 2); // battery current
+		  convert_to_big_endian(&(((uint8_t*)&temp_bat)[4]), 3); // mah
+		  send_telem(CRSF_FRAMETYPE_BATTERY_SENSOR, (uint8_t*)&temp_bat, sizeof(temp_bat)/sizeof(uint8_t));
+		  HAL_ADC_Start_DMA(&hadc1,(uint32_t *)raw_adc_data , 2); // take readings from adc
 		 // in future before sending check whether old data sent or not
 	  }
 
 
 	// FAILSAFE detection
-	  if(((volatile uint16_t)(TIM4->CNT) - last_packet_received_time) > (uint16_t)(500000/20) && new_packet_recieved == true) // no packet received in 100ms // 20 us is the step size
+	  if((uint32_t)(HAL_GetTick() - last_packet_received_time) > 500) // no packet received in 100ms // 20 us is the step size
 	  {
 		  arm_state = FAILSAFE;
 		  new_packet_recieved = false;
+		  last_packet_received_time = HAL_GetTick();
+
 	  }else if(arm_state == FAILSAFE && new_packet_recieved == true)
 	  {
 		  arm_state = IDLE;
@@ -256,6 +292,10 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+
+  /** Enables the Clock Security System
+  */
+  HAL_RCC_EnableCSS();
 }
 
 /* USER CODE BEGIN 4 */
@@ -293,6 +333,30 @@ void convert_to_big_endian(uint8_t * dst , uint8_t bytes)
 
 }
 
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+	if(hadc->Instance == ADC1)
+	{
+		bat.voltage = (uint16_t)(((raw_adc_data[0]*3.3/(float)1024)*vbat_scale*vbat_multiplier/(float)vbat_divider)*10.0); // battery voltage in 0.1V units
+		bat.current = (uint16_t)(((raw_adc_data[1]*3.3/(float)1024)*ibata_scale - ibata_offset)*10.0); // battery voltage in 0.1A units
+		bat.remaining = (uint8_t)(map(bat.voltage,150,168,0,100,true));
+	}
+}
+
+bool subtract_and_compare_unsigned(uint32_t a,uint32_t b, uint32_t c ,uint32_t max_size)
+{
+	uint32_t difference= 0;
+	if(a>b)difference = a-b;
+	if(a<=b)difference = a-b+max_size;
+
+	if(difference > c)
+		return true;
+	return false;
+
+
+}
+
+
 /* USER CODE END 4 */
 
 /**
@@ -306,6 +370,7 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+
   }
   /* USER CODE END Error_Handler_Debug */
 }

@@ -4,14 +4,30 @@ uint8_t rx_buffer[128] ={}; // this ensures that the buffer contains atleast one
 uint8_t tx_buffer[64] = {};
 crsf_channels_t channel_data;
 uint8_t gen_poly = 0xd5; //x8 + x5 + x4 + 1
-volatile uint16_t last_packet_received_time = 0;
+volatile uint32_t last_packet_received_time = 0;
 volatile bool new_packet_recieved = false;
 
 int last_parsed_packet_location = 0;
 
-
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance == USART6)
+	{
+		if((USART6->SR && (1<<3)))
+		{	// over run error
+			USART6->DR;
+			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
+			HAL_UART_DMAStop(&huart6);
+			HAL_UART_Receive_DMA(&huart6, rx_buffer, sizeof(rx_buffer));
+			channel_data.channel5 = CRSF_CHANNEL_VALUE_MIN; // disarm
+			// log in future how many times have to reset
+		}
+	}
+}
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
+	if(huart->Instance == USART6){
+
 	uint8_t length = 0;
 
 		// check if its a valid packet
@@ -32,7 +48,7 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 				{
 					// valid packet
 					last_parsed_packet_location = i+2+length;
-				    last_packet_received_time = TIM4->CNT; // non hal way of doing it
+				    last_packet_received_time = HAL_GetTick(); // non hal way of doing it
 	//				last_packet_received_time = __HAL_TIM_GET_COUNTER(&htim4);
 					new_packet_recieved = true;
 					if(rx_buffer[i+2] == CRSF_FRAMETYPE_RC_CHANNELS_PACKED && length-2 == CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE)
@@ -42,6 +58,7 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 				}
 			}
 		}
+	}
 
 }
 
@@ -49,13 +66,15 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 void crsf_init()
 {
 //	(&huart6)->hdmarx->XferCpltCallback = check_and_decode_crsf;
-	HAL_UART_Receive_DMA(&huart6, rx_buffer, 128);
+	HAL_UART_Receive_DMA(&huart6, rx_buffer, sizeof(rx_buffer));
 
 }
 
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+	if(huart->Instance == USART6){
+//	HAL_UART_DMAStop(&huart6);
 	uint8_t length = 0;
 
 	// check if its a valid packet
@@ -75,7 +94,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			if(calculateCRC(rx_buffer , i+2,length) == 0) // start crc calculation from type byte
 			{
 				// valid packet
-			    last_packet_received_time = TIM4->CNT; // non hal way of doing it
+			    last_packet_received_time = HAL_GetTick(); // non hal way of doing it
 //				last_packet_received_time = __HAL_TIM_GET_COUNTER(&htim4);
 				new_packet_recieved = true;
 				if(rx_buffer[i+2] == CRSF_FRAMETYPE_RC_CHANNELS_PACKED && length-2 == CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE)
@@ -96,6 +115,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	// after processing re-enable DMA for new data
 	last_parsed_packet_location = 0;
 	HAL_UART_Receive_DMA(&huart6, rx_buffer, sizeof(rx_buffer));
+}
 }
 
 
