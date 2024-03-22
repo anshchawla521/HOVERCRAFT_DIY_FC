@@ -1,6 +1,5 @@
-../Core/Src/CRSF.c:12:6:HAL_UART_ErrorCallback	3
-../Core/Src/CRSF.c:27:6:HAL_UART_RxHalfCpltCallback	9
-../Core/Src/CRSF.c:66:6:crsf_init	1
-../Core/Src/CRSF.c:74:6:HAL_UART_RxCpltCallback	9
-../Core/Src/CRSF.c:122:9:calculateCRC	7
-../Core/Src/CRSF.c:158:6:send_telem	1
+../Core/Src/CRSF.c:13:6:HAL_UART_ErrorCallback	3
+../Core/Src/CRSF.c:31:6:crsf_init	4
+../Core/Src/CRSF.c:56:6:HAL_UARTEx_RxEventCallback	9
+../Core/Src/CRSF.c:144:9:calculateCRC	2
+../Core/Src/CRSF.c:155:6:send_telem	1

@@ -3,6 +3,8 @@
 https://github.dev/betaflight/betaflight/betaflight/src/main/drivers/dshot_command.h
 https://github.dev/betaflight/betaflight/betaflight/src/main/drivers/dshot.h
 https://github.com/Carbon225/esp32-dshot/blob/master/DShotRMT.cpp
+https://github.com/crsf-wg/crsf/wiki/Physical-Layer -> default baud rate is 416666
+
 
 ## comments
 Beep working for cmd setting why telem needs to be set 1 i dont know

@@ -46,6 +46,8 @@
 #define vbat_multiplier 1
 #define ibata_scale 400
 #define ibata_offset 0
+
+#define total_number_of_samples 200
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -64,6 +66,11 @@ armingstate_t arm_state = 0;
 uint16_t battery_telem_last_sent = 0;
 volatile uint16_t raw_adc_data[3] = {0};
 volatile crsf_sensor_battery_t bat = {1,2,4,34};
+
+
+uint16_t average_motor_values[4][total_number_of_samples] = {0};
+double final_motor_values[4] = {0};
+
 
 /* USER CODE END PV */
 
@@ -212,6 +219,7 @@ int main(void)
 		  dshot_beep(2,2);
 	  }else{
 	  dshot_write(my_motor_value , false);
+
 	  }
 
 
@@ -231,7 +239,7 @@ int main(void)
 
 
 	// FAILSAFE detection
-	  if((uint32_t)(HAL_GetTick() - last_packet_received_time) > 500) // no packet received in 100ms // 20 us is the step size
+	  if((uint32_t)(HAL_GetTick() - last_packet_received_time) > 1000) //no packet received in 1 second
 	  {
 		  arm_state = FAILSAFE;
 		  new_packet_recieved = false;
