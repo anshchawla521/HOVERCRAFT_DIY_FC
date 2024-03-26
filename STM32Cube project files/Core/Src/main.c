@@ -63,9 +63,9 @@ uint16_t my_motor_value[4] = {0, 0, 0, 0};
 int angle = 0;
 typedef enum {IDLE = 0,PREARMED,NOPREARM,ARMED,FAILSAFE} armingstate_t;
 armingstate_t arm_state = 0;
-uint16_t battery_telem_last_sent = 0;
+
 volatile uint16_t raw_adc_data[3] = {0};
-volatile crsf_sensor_battery_t bat = {1,2,4,34};
+
 
 
 uint16_t average_motor_values[4][total_number_of_samples] = {0};
@@ -129,6 +129,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   dshot_init(DSHOT600);
   crsf_init();
+  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
 
 	// want the timer to run at 1 mhz (u can choose any )
 	// so prescaler = 48mhz(apb1) / 1mhz = 48
@@ -187,7 +188,7 @@ int main(void)
 		  else if(channel_data.channel2 <= CRSF_CHANNEL_VALUE_MID - deadband)
 			  my_motor_value[0] = map(channel_data.channel2, CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_MID - deadband, DSHOT_3DR_MAX_THROTTLE, DSHOT_3DR_MIN_THROTTLE, true); // correct this
 		  else
-			  my_motor_value[0]= 0;
+			  my_motor_value[0]= DSHOT_3D_NEUTRAL;
 
 
 		  angle = map(channel_data.channel1,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,min_servo, max_servo,true);
@@ -207,6 +208,7 @@ int main(void)
 		  }else
 		  {
 //			  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
+			  HAL_UART_ErrorCallback(&huart6);
 		  }
 		  dshot_beep(2,2);
 		  angle = 1000;
@@ -224,22 +226,19 @@ int main(void)
 
 
 	  // telemetry
-	  if((uint16_t)(HAL_GetTick() - battery_telem_last_sent) > 500) // send battery telemetry every 500ms
+	  if((uint16_t)(HAL_GetTick() - telem_last_sent) > 500 && arm_state != FAILSAFE && sent_telemetry) // send battery telemetry every 500ms
 	  {
-		  battery_telem_last_sent = HAL_GetTick();
-		  crsf_sensor_battery_t temp_bat = {0};
-		  memcpy((void*)&temp_bat , (void*)&bat, sizeof(bat));
-		  convert_to_big_endian((uint8_t*)&temp_bat, 2); // battery voltage
-		  convert_to_big_endian(&(((uint8_t*)&temp_bat)[2]), 2); // battery current
-		  convert_to_big_endian(&(((uint8_t*)&temp_bat)[4]), 3); // mah
-		  send_telem(CRSF_FRAMETYPE_BATTERY_SENSOR, (uint8_t*)&temp_bat, sizeof(temp_bat)/sizeof(uint8_t));
+		  send_telemetry = true;
+		  sent_telemetry = false;
 		  HAL_ADC_Start_DMA(&hadc1,(uint32_t *)raw_adc_data , 2); // take readings from adc
+
+
 		 // in future before sending check whether old data sent or not
 	  }
 
 
 	// FAILSAFE detection
-	  if((uint32_t)(HAL_GetTick() - last_packet_received_time) > 1000) //no packet received in 1 second
+	  if((uint32_t)(HAL_GetTick() - last_packet_received_time) > 500) //no packet received in 1 second
 	  {
 		  arm_state = FAILSAFE;
 		  new_packet_recieved = false;
@@ -328,18 +327,6 @@ float map(float value_to_map , float from_low ,float from_high , float to_low , 
 }
 
 
-void convert_to_big_endian(uint8_t * dst , uint8_t bytes)
-{
-	uint8_t temp =0;
-	for(int i = 0; i < bytes/2;i++)
-	{
-		//swap
-		temp = dst[i];
-		dst[i] = dst[(bytes-1)-i];
-		dst[(bytes-1)-i] = temp;
-	}
-
-}
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
