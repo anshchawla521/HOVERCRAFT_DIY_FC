@@ -92,6 +92,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 				{
 					memcpy(&channel_data, &(rx_buffer[i+3]),sizeof(channel_data));
 				}
+				i = i + 2 + length - 1; // -1 because for loop will increment this
 			}
 		}
 	}

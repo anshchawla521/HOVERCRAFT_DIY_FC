@@ -20,9 +20,9 @@ Telemetry only sent just after when packet received
 
 ## next steps
 
--> implement filter
--> receving algo , baud rate as f1000
--> implement msp for esc configurator.com
+- implement filter
+- receving algo , baud rate as f1000
+- implement msp for esc configurator.com
 
 ## imp links
 
