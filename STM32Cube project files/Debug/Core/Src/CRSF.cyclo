@@ -1,6 +1,6 @@
 ../Core/Src/CRSF.c:17:6:HAL_UART_ErrorCallback	3
-../Core/Src/CRSF.c:37:6:crsf_init	4
-../Core/Src/CRSF.c:62:6:HAL_UARTEx_RxEventCallback	11
-../Core/Src/CRSF.c:157:9:calculateCRC	2
-../Core/Src/CRSF.c:168:6:send_telem	1
-../Core/Src/CRSF.c:180:6:convert_to_big_endian	2
+../Core/Src/CRSF.c:38:6:crsf_init	4
+../Core/Src/CRSF.c:63:6:HAL_UARTEx_RxEventCallback	11
+../Core/Src/CRSF.c:158:9:calculateCRC	2
+../Core/Src/CRSF.c:169:6:send_telem	1
+../Core/Src/CRSF.c:181:6:convert_to_big_endian	2

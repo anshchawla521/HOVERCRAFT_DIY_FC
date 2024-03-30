@@ -22,6 +22,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 		{	// over run error
 			HAL_UART_DMAStop(&huart6);
 			uint8_t temp = USART6->DR;
+			UNUSED(temp);
 			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
 			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
 			HAL_UARTEx_ReceiveToIdle_DMA(&huart6, rx_buffer, sizeof(rx_buffer));

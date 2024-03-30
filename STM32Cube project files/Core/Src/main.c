@@ -60,7 +60,9 @@
 
 /* USER CODE BEGIN PV */
 uint16_t my_motor_value[4] = {0, 0, 0, 0};
-int angle = 0;
+volatile int angle = 0;
+volatile int anglex = 0;
+volatile int angley = 0;
 typedef enum {IDLE = 0,PREARMED,NOPREARM,ARMED,FAILSAFE} armingstate_t;
 armingstate_t arm_state = 0;
 
@@ -134,15 +136,18 @@ int main(void)
 	// want the timer to run at 1 mhz (u can choose any )
 	// so prescaler = 48mhz(apb1) / 1mhz = 48
 	__HAL_TIM_SET_PRESCALER(&htim5, 48);
+	__HAL_TIM_SET_PRESCALER(&htim4, 48);
 		//for 50hz the arr value should be 1mhz/50 = 20000
 	__HAL_TIM_SET_AUTORELOAD(&htim5, 20000);
 	__HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 , 1200);
 	HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
 
+	__HAL_TIM_SET_AUTORELOAD(&htim4, 20000);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1 , 1200);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2 , 1200);
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
 
-	// tim4 used for measurment of time
-	__HAL_TIM_SET_PRESCALER(&htim4, 960); // so timer running at 0.05mhz ==> 20 us = 1 step => timer overflows in 1.3 seconds
-	HAL_TIM_Base_Start(&htim4);
 
 	// adc
     //HAL_ADC_Start_DMA(&hadc1,(uint32_t *)raw_adc_data , 2); // take readings from adc
@@ -192,6 +197,8 @@ int main(void)
 
 
 		  angle = map(channel_data.channel1,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,min_servo, max_servo,true);
+		  anglex = map(channel_data.channel10,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,750, 2500,true);
+		  angley = map(channel_data.channel11,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,min_servo, max_servo,true);
 	  }
 	  else{
 		  my_motor_value[0] = 0;
@@ -215,6 +222,8 @@ int main(void)
 
 	  }
 	  __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 ,angle);
+	  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1 ,anglex);
+	  __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2 ,angley);
 	  if(my_motor_value[0] == 0 && my_motor_value[2] == 0 && channel_data.channel9 > 1500)
 	  {
 		  dshot_beep(0,2);
@@ -350,6 +359,20 @@ bool subtract_and_compare_unsigned(uint32_t a,uint32_t b, uint32_t c ,uint32_t m
 
 
 }
+
+//void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
+//{
+//	if(htim->Instance == TIM5)
+//		{
+//			__HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 ,angle);
+//		}
+//	if(htim->Instance == TIM4)
+//		{
+//			__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1 ,anglex);
+//			__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2 ,angley);
+//		}
+//
+//}
 
 
 /* USER CODE END 4 */

@@ -132,7 +132,7 @@ static void dshot_put_tc_callback_function()
 	MOTOR_2_TIM->hdma[TIM_DMA_ID_CC3]->XferCpltCallback = dshot_dma_tc_callback;
 #endif
 #ifdef MOTOR_3_TIM
-	MOTOR_3_TIM->hdma[TIM_DMA_ID_CC4]->XferCpltCallback = dshot_dma_tc_callback;
+	MOTOR_3_TIM->hdma[TIM_DMA_ID_CC1]->XferCpltCallback = dshot_dma_tc_callback;
 #endif
 #ifdef MOTOR_4_TIM
 	MOTOR_4_TIM->hdma[TIM_DMA_ID_CC2]->XferCpltCallback = dshot_dma_tc_callback;
