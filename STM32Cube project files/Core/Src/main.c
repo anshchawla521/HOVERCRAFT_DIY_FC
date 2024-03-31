@@ -73,6 +73,10 @@ volatile uint16_t raw_adc_data[3] = {0};
 uint16_t average_motor_values[4][total_number_of_samples] = {0};
 double final_motor_values[4] = {0};
 
+int bat_0_voltage = 150;
+int bat_100_voltage = 168;
+bool first_startup = true;
+
 
 /* USER CODE END PV */
 
@@ -343,7 +347,27 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	{
 		bat.voltage = (uint16_t)(((raw_adc_data[0]*3.3/(float)1024)*vbat_scale*vbat_multiplier/(float)vbat_divider)*10.0); // battery voltage in 0.1V units
 		bat.current = (uint16_t)(((raw_adc_data[1]*3.3/(float)1024)*ibata_scale - ibata_offset)*10.0); // battery voltage in 0.1A units
-		bat.remaining = (uint8_t)(map(bat.voltage,150,168,0,100,true));
+		if(first_startup)
+		{   first_startup = false;
+			if(bat.voltage > 152)
+			{
+				//4s
+				bat_0_voltage = 152;
+				bat_100_voltage = 168;
+			}else if(bat.voltage > 114)
+			{
+				//3s
+				bat_0_voltage = 114;
+				bat_100_voltage = 126;
+			}else if(bat.voltage > 76)
+			{
+				//3s
+				bat_0_voltage = 76;
+				bat_100_voltage = 84;
+			}
+
+		}
+		bat.remaining = (uint8_t)(map(bat.voltage,bat_0_voltage,bat_100_voltage,0,100,true));
 	}
 }
 
