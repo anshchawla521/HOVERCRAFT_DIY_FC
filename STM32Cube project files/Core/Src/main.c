@@ -47,7 +47,8 @@
 #define ibata_scale 400
 #define ibata_offset 0
 
-#define total_number_of_samples 200
+#define total_number_of_samples 100
+#define number_of_motors 2
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -70,8 +71,10 @@ volatile uint16_t raw_adc_data[3] = {0};
 
 
 
-uint16_t average_motor_values[4][total_number_of_samples] = {0};
-double final_motor_values[4] = {0};
+uint16_t average_motor_values[number_of_motors][total_number_of_samples] = {0};
+double final_motor_values[number_of_motors] = {0};
+//0 , 1 are dshot motors
+// 2 3 4 are servos
 
 int bat_0_voltage = 150;
 int bat_100_voltage = 168;
@@ -143,12 +146,12 @@ int main(void)
 	__HAL_TIM_SET_PRESCALER(&htim4, 48);
 		//for 50hz the arr value should be 1mhz/50 = 20000
 	__HAL_TIM_SET_AUTORELOAD(&htim5, 20000);
-	__HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 , 1200);
+	__HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1 , (min_servo+max_servo)/2);
 	HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
 
 	__HAL_TIM_SET_AUTORELOAD(&htim4, 20000);
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1 , 1200);
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2 , 1200);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1 , 2300);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2 , 2050);
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
 
@@ -171,6 +174,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  for (int i = total_number_of_samples-1 ; i >0  ; i--)
+	  {
+		  for(int j = 0; j < number_of_motors;j++)
+		  {
+			  average_motor_values[j][i] = average_motor_values[j][i-1];
+			  // shift to right
+		  }
+	  }
 	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 	  if(arm_state == ARMED && channel_data.channel5 < CRSF_CHANNEL_VALUE_MID + 20) arm_state = IDLE ;
 	  else if(arm_state == IDLE && channel_data.channel6 > CRSF_CHANNEL_VALUE_MID + 20 && channel_data.channel5 < CRSF_CHANNEL_VALUE_MID + 20) arm_state = PREARMED ;
@@ -201,14 +212,29 @@ int main(void)
 
 
 		  angle = map(channel_data.channel1,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,min_servo, max_servo,true);
-		  anglex = map(channel_data.channel10,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,750, 2500,true);
-		  angley = map(channel_data.channel11,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,min_servo, max_servo,true);
+		  average_motor_values[0][0] = map(channel_data.channel10,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,750, 2500,true);
+		  average_motor_values[1][0] = map(channel_data.channel11,CRSF_CHANNEL_VALUE_1000,CRSF_CHANNEL_VALUE_2000,min_servo, max_servo,true);
 	  }
 	  else{
 		  my_motor_value[0] = 0;
 		  my_motor_value[2] = 0;
-		  angle = (min_servo+max_servo)/2;
+		  angle  = (min_servo+max_servo)/2;
 	  }
+
+	  for(int j = 0; j < number_of_motors;j++)
+		  {
+			  final_motor_values[j] = 0;
+			  // shift to right
+		  }
+	  for (int i = 0 ; i < total_number_of_samples ; i++)
+	  	  {
+	  		  for(int j = 0; j < number_of_motors;j++)
+	  		  {
+	  			  final_motor_values[j] += (average_motor_values[j][i])/total_number_of_samples;
+	  		  }
+	  	  }
+	  anglex = (int)(final_motor_values[0]);
+	  angley = (int)(final_motor_values[1]);
 
 	  if(arm_state == FAILSAFE )
 	  {
