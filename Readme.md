@@ -29,4 +29,10 @@ Telemetry only sent just after when packet received
 https://github.dev/betaflight/betaflight/betaflight/src/main/drivers/dshot_command.h
 https://github.dev/betaflight/betaflight/betaflight/src/main/drivers/dshot.h
 https://github.com/Carbon225/esp32-dshot/blob/master/DShotRMT.cpp
-https://github.com/crsf-wg/crsf/wiki/Physical-Layer -> default baud rate is 416666
+https://github.com/crsf-wg/crsf/wiki/Physical-Layer -> default baud rate is 416666   
+
+
+## 3D files   
+You can find the fusion 360 f3d file in the 3d files folder 
+The full design has been made by me and is copyrighted and is NOT to be used for commercial purposes 
+![Hovercraft 3d file](assets/cad.png)
